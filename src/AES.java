@@ -386,8 +386,7 @@ public class AES {
         Aes.printMatrix(state, "Data");
         System.out.println(Aes.convertStateIntoHexString(state));
         /********************************************************************************/
-        /*short[][] shifted = Aes.shiftRowsRight(state);
-        Aes.printMatrix(shifted,"Shifted");*/
+
 
         ArrayList<short[][]> keys = Aes.keyGeneration(key);
         for (int i = 0; i < keys.size(); i++){
