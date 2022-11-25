@@ -83,6 +83,9 @@ public class AES {
                 cipherText = cipherText.concat(Long.toHexString(dataState[j][i]));
             }
         }
+        for (int i = cipherText.length(); i < 32; i++){
+            cipherText = "0" + cipherText;
+        }
         return cipherText;
     }
 
@@ -90,14 +93,13 @@ public class AES {
     String hexToBin(String input) {
         String output = "";
         int n = input.length() * 4;
-        ArrayList<String> blocks = splitText(input,input.length()/2);
+        ArrayList<String> blocks = splitText(input,1);
         for (String block : blocks){
             output = output.concat(Long.toBinaryString(Long.parseUnsignedLong(block,16)));
         }
         while (output.length() < n)
             output = "0" + output;
-        return input;
-
+        return output;
     }
 
     // binary to hexadecimal conversion
@@ -128,9 +130,11 @@ public class AES {
         String encryptedData = "";
         ArrayList<String> splitted = splitText(binary,8);
         for (String temp : splitted) {
-            int num = Integer.parseInt(temp, 2);
-            char letter = (char) num;
-            encryptedData = encryptedData.concat(String.valueOf(letter));
+            if(!temp.contains("#")) {
+                int num = Integer.parseInt(temp, 2);
+                char letter = (char) num;
+                encryptedData = encryptedData.concat(String.valueOf(letter));
+            }
         }
         return encryptedData;
     }
@@ -168,7 +172,7 @@ public class AES {
             for (int k = 0; k < i; k++){
                 temp.add(matrix[i][3-k]);              // elemnets I want to shift
             }
-            for (int k = 0; k < temp.size(); k++){
+            for (int k = 0; k < 4; k++){
                 if ((3 - temp.size() - k) >= 0) {
                     newMatrix[i][3 - k] = matrix[i][3 - temp.size() - k];
                 }
@@ -199,7 +203,7 @@ public class AES {
 
     public short multiplyCell(short[][] matrix1, short[][] matrix2, int row, int col){
         short cell = 0;
-        for(int i = 0; i < 4; i++){
+        for(int i = 0; i < matrix1.length; i++){
             cell += matrix1[row][i] * matrix2[i][col];
         }
         return cell;
@@ -306,7 +310,7 @@ public class AES {
 
         decryption = shiftRowsRight(decryption);
         decryption = sBox_InvSbox(decryption,Inv_Sbox);
-        for (int i = keys.size()-2; i > 0; i++){
+        for (int i = keys.size()-2; i > 0; i--){
             decryption = decryption_round(decryption,keys.get(i));
         }
         decryption = xor(decryption, keys.get(0));
@@ -371,7 +375,6 @@ public class AES {
         for (int i = 0; i < text.size();i++){
             String data = text.get(i);
             data = Aes.convertStringToBinary(data);
-            System.out.println(data);
             data = Aes.binToHex(data);
             text.set(i,data);                               // Replace String text with hex
         }
@@ -384,15 +387,29 @@ public class AES {
 
         short[][] state = Aes.convertTextIntoState(text.get(0));
         Aes.printMatrix(state, "Data");
-        System.out.println(Aes.convertStateIntoHexString(state));
         /********************************************************************************/
-
-
         ArrayList<short[][]> keys = Aes.keyGeneration(key);
         for (int i = 0; i < keys.size(); i++){
             Aes.printMatrix(keys.get(i), "Key" + i);
         }
-        String encryptedText = Aes.encrypt(text.get(0), key);
-        System.out.println("Encryption Text\n" + encryptedText);
+        String encryptedText = "";
+        System.out.println(text);
+
+        for (String block : text) {
+            encryptedText = encryptedText.concat(Aes.encrypt(block, key));
+        }
+        System.out.println("Encrypted Text\n" + encryptedText);
+
+        ArrayList<String> decryptedText = Aes.splitText(encryptedText,32);
+        System.out.println("\nSize = " + encryptedText.length());
+        String decrypted = "";
+        for (String block : decryptedText){
+            if (!block.contains("#")) {
+                decrypted = decrypted.concat(Aes.decrypt(block, key));
+            }
+        }
+        decrypted = Aes.hexToBin(decrypted);
+        decrypted = Aes.convertBinaryToString(decrypted);
+        System.out.println("Decrypted Text:\n" + decrypted + "\nsize = " + decrypted.length());
     }
 }
