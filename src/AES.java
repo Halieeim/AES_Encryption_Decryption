@@ -1,3 +1,5 @@
+import java.nio.charset.StandardCharsets;
+import java.util.HexFormat;
 import java.util.Scanner;
 import java.util.ArrayList;
 
@@ -89,19 +91,6 @@ public class AES {
         return cipherText;
     }
 
-    // hexadecimal to binary conversion
-    String hexToBin(String input) {
-        String output = "";
-        int n = input.length() * 4;
-        ArrayList<String> blocks = splitText(input,1);
-        for (String block : blocks){
-            output = output.concat(Long.toBinaryString(Long.parseUnsignedLong(block,16)));
-        }
-        while (output.length() < n)
-            output = "0" + output;
-        return output;
-    }
-
     // binary to hexadecimal conversion
     String binToHex(String input) {
         String output = "";
@@ -126,17 +115,10 @@ public class AES {
         return result.toString();
     }
 
-    public String convertBinaryToString(String binary){
-        String encryptedData = "";
-        ArrayList<String> splitted = splitText(binary,8);
-        for (String temp : splitted) {
-            if(!temp.contains("#")) {
-                int num = Integer.parseInt(temp, 2);
-                char letter = (char) num;
-                encryptedData = encryptedData.concat(String.valueOf(letter));
-            }
-        }
-        return encryptedData;
+    public String hexToString(String hex){
+        byte[] bytes = HexFormat.of().parseHex(hex);
+        String str = new String(bytes, StandardCharsets.UTF_8);
+        return str;
     }
 
     public short[][] sBox_InvSbox(short[][] matrix, short[][] sboxMatrix){
@@ -201,22 +183,119 @@ public class AES {
         return newMatrix;
     }
 
-    public short multiplyCell(short[][] matrix1, short[][] matrix2, int row, int col){
-        short cell = 0;
+    public short multiplyCell_Inv(short[][] matrix1, short[][] matrix2, int row, int col){
+        short cell = 0, temp = 0, PX = 0x011B, shift;
         for(int i = 0; i < matrix1.length; i++){
-            cell += matrix1[row][i] * matrix2[i][col];
+            if(matrix1[row][i] == 0x0E) {
+                temp = (short) ((matrix2[i][col]<<3) ^ (matrix2[i][col]<<2) ^ (matrix2[i][col]<<1));
+                while (temp > 255){
+                    for (shift = 0;;shift++){
+                        if (temp < PX<<shift){
+                            break;
+                        }
+                    }
+                    if (shift == 0){
+                        temp ^= PX;
+                    } else {
+                        temp ^= (PX << (shift - 1));
+                    }
+                }
+                cell ^= temp;
+            } else if (matrix1[row][i] == 0x0D){
+                temp = (short) ((matrix2[i][col]<<3) ^ (matrix2[i][col]<<2) ^ matrix2[i][col]);
+                while (temp > 255){
+                    for (shift = 0;;shift++){
+                        if (temp < PX<<shift){
+                            break;
+                        }
+                    }
+                    if (shift == 0){
+                        temp ^= PX;
+                    } else {
+                        temp ^= (PX << (shift - 1));
+                    }
+                }
+                cell ^= temp;
+            } else if (matrix1[row][i] == 0x0B){
+                temp = (short) ((matrix2[i][col]<<3) ^ (matrix2[i][col]<<1) ^ matrix2[i][col]);
+                while (temp > 255){
+                    for (shift = 0;;shift++){
+                        if (temp < PX<<shift){
+                            break;
+                        }
+                    }
+                    if (shift == 0){
+                        temp ^= PX;
+                    } else {
+                        temp ^= (PX << (shift - 1));
+                    }
+                }
+                cell ^= temp;
+            } else if (matrix1[row][i] == 0x09){
+                temp = (short) ((matrix2[i][col]<<3) ^ matrix2[i][col]);
+                while (temp > 255){
+                    for (shift = 0;;shift++){
+                        if (temp < PX<<shift){
+                            break;
+                        }
+                    }
+                    if (shift == 0){
+                        temp ^= PX;
+                    } else {
+                        temp ^= (PX << (shift - 1));
+                    }
+                }
+                cell ^= temp;
+            }
+        }
+        return cell;
+    }
+    public short multiplyCell(short[][] matrix1, short[][] matrix2, int row, int col){
+        short cell = 0, temp = 0, PX = 0x11B;
+        for(int i = 0; i < matrix1.length; i++){
+            if(matrix1[row][i] == 1) {
+                cell ^= matrix2[i][col];
+            } else if (matrix1[row][i] == 2){
+                temp = (short) (matrix2[i][col]<<1);
+                //check reduction
+                while (temp > 255){
+                    temp ^= PX;
+                }
+                cell ^= temp;
+            } else {
+                temp = (short) (matrix2[i][col]<<1);
+                temp ^= matrix2[i][col];
+                // check reduction
+                while (temp > 255){
+                    temp ^= PX;
+                }
+                cell ^= temp;
+            }
         }
         return cell;
     }
 
     public short[][] mixCol(short[][] matrix, short[][] matrix_columns){
-        short[][] result = new short[matrix.length][matrix[0].length];
-        for (int i = 0; i < matrix.length; i++){
-            for (int j = 0; j < matrix[0].length; j++){
-                result[i][j] = multiplyCell(matrix, matrix_columns, i, j);
+        short[][] temp = new short[matrix.length][1];
+        short[][] Result = new short[matrix.length][matrix[0].length];
+        for (int k = 0; k < 4; k++) {
+            short[][] subCol = subColumn(matrix,k);
+            for (int i = 0; i < matrix.length; i++) {
+                for (int j = 0; j < subCol[0].length; j++) {
+                    if (matrix_columns == mixColumn) {
+                        temp[i][j] = multiplyCell(matrix_columns, subCol, i, j);
+                    } else {
+                        temp[i][j] = multiplyCell_Inv(matrix_columns, subCol, i, j);
+                    }
+                }
+            }
+            for (int r = k; r < 4; r++) {
+                for (int c = 0; c < 4; c++){
+                    Result[c][r] = temp[c][0];
+                }
             }
         }
-        return result;
+        return Result;
     }
 
     public short[][] rotWord(short[][] word){
@@ -352,6 +431,7 @@ public class AES {
         }
     }
     public static void main(String[] args) {
+        /***************************************************************Input_Handling*****************************************************************/
         System.out.println("Enter Plaintext to encrypt:");
         Scanner input = new Scanner(System.in);
         String plainText = input.nextLine();
@@ -360,7 +440,6 @@ public class AES {
             System.out.println("Please Enter new key of length 16 characters");
             key = input.nextLine();
         }
-
         AES Aes = new AES();
         ArrayList<String> text = new ArrayList<>();
         if(plainText.length() < 16){
@@ -378,38 +457,29 @@ public class AES {
             data = Aes.binToHex(data);
             text.set(i,data);                               // Replace String text with hex
         }
-
         key = Aes.convertStringToBinary(key);
-        key = Aes.binToHex(key);                      // key in hex
+        key = Aes.binToHex(key);                            // key in hex
         short[][] keyState = Aes.convertTextIntoState(key);
         Aes.printMatrix(keyState, "Key");
-
-
         short[][] state = Aes.convertTextIntoState(text.get(0));
         Aes.printMatrix(state, "Data");
-        /********************************************************************************/
+        /***************************************************************Key_Generation*****************************************************************/
         ArrayList<short[][]> keys = Aes.keyGeneration(key);
         for (int i = 0; i < keys.size(); i++){
             Aes.printMatrix(keys.get(i), "Key" + i);
         }
+        /*****************************************************************Encryption*******************************************************************/
         String encryptedText = "";
-        System.out.println(text);
-
         for (String block : text) {
             encryptedText = encryptedText.concat(Aes.encrypt(block, key));
         }
-        System.out.println("Encrypted Text\n" + encryptedText);
-
+        System.out.println("\nPlain Text\n" + plainText + "\n\nEncrypted Text\n" + encryptedText);
+        /*****************************************************************Decryption*******************************************************************/
         ArrayList<String> decryptedText = Aes.splitText(encryptedText,32);
-        System.out.println("\nSize = " + encryptedText.length());
         String decrypted = "";
         for (String block : decryptedText){
-            if (!block.contains("#")) {
-                decrypted = decrypted.concat(Aes.decrypt(block, key));
-            }
+            decrypted = decrypted.concat(Aes.decrypt(block, key));
         }
-        decrypted = Aes.hexToBin(decrypted);
-        decrypted = Aes.convertBinaryToString(decrypted);
-        System.out.println("Decrypted Text:\n" + decrypted + "\nsize = " + decrypted.length());
+        System.out.println("\nDecrypted Text:\n" + Aes.hexToString(decrypted));
     }
 }
