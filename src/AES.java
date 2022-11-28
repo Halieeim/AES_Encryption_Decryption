@@ -79,14 +79,15 @@ public class AES {
     }
 
     public String convertStateIntoHexString(short[][] dataState){
-        String cipherText = "";
+        String cipherText = "", temp;
         for (int i = 0; i < 4; i++){
             for (int j = 0; j < 4; j++){
-                cipherText = cipherText.concat(Long.toHexString(dataState[j][i]));
+                temp = Long.toHexString(dataState[j][i]);
+                for (int k = temp.length(); k < 2; k++){
+                    temp = "0" + temp;
+                }
+                cipherText = cipherText.concat(temp);
             }
-        }
-        for (int i = cipherText.length(); i < 32; i++){
-            cipherText = "0" + cipherText;
         }
         return cipherText;
     }
@@ -171,7 +172,7 @@ public class AES {
         for (int i = 1; i < matrix.length; i++){
             ArrayList<Short> temp = new ArrayList<>();
             for (int k = 0; k < i; k++){
-                temp.add(matrix[i][k]);              // elemnets I want to shift
+                temp.add(matrix[i][k]);              // elements I want to shift
             }
             for (int k = temp.size(); k < 4; k++){
                 newMatrix[i][k - temp.size()] = matrix[i][k];
@@ -188,89 +189,52 @@ public class AES {
         for(int i = 0; i < matrix1.length; i++){
             if(matrix1[row][i] == 0x0E) {
                 temp = (short) ((matrix2[i][col]<<3) ^ (matrix2[i][col]<<2) ^ (matrix2[i][col]<<1));
-                while (temp > 255){
-                    for (shift = 0;;shift++){
-                        if (temp < PX<<shift){
-                            break;
-                        }
-                    }
-                    if (shift == 0){
-                        temp ^= PX;
-                    } else {
-                        temp ^= (PX << (shift - 1));
-                    }
-                }
-                cell ^= temp;
+
             } else if (matrix1[row][i] == 0x0D){
                 temp = (short) ((matrix2[i][col]<<3) ^ (matrix2[i][col]<<2) ^ matrix2[i][col]);
-                while (temp > 255){
-                    for (shift = 0;;shift++){
-                        if (temp < PX<<shift){
-                            break;
-                        }
-                    }
-                    if (shift == 0){
-                        temp ^= PX;
-                    } else {
-                        temp ^= (PX << (shift - 1));
-                    }
-                }
-                cell ^= temp;
+
             } else if (matrix1[row][i] == 0x0B){
                 temp = (short) ((matrix2[i][col]<<3) ^ (matrix2[i][col]<<1) ^ matrix2[i][col]);
-                while (temp > 255){
-                    for (shift = 0;;shift++){
-                        if (temp < PX<<shift){
-                            break;
-                        }
-                    }
-                    if (shift == 0){
-                        temp ^= PX;
-                    } else {
-                        temp ^= (PX << (shift - 1));
-                    }
-                }
-                cell ^= temp;
+
             } else if (matrix1[row][i] == 0x09){
                 temp = (short) ((matrix2[i][col]<<3) ^ matrix2[i][col]);
-                while (temp > 255){
-                    for (shift = 0;;shift++){
-                        if (temp < PX<<shift){
-                            break;
-                        }
-                    }
-                    if (shift == 0){
-                        temp ^= PX;
-                    } else {
-                        temp ^= (PX << (shift - 1));
+
+            }
+            // Reduction according to GF(2^8)
+            while (temp > 255){
+                for (shift = 0;;shift++){
+                    if (temp < PX<<shift){
+                        break;
                     }
                 }
-                cell ^= temp;
+                if (shift == 0){
+                    temp ^= PX;
+                } else {
+                    temp ^= (PX << (shift - 1));
+                }
             }
+            cell ^= temp;
         }
         return cell;
     }
     public short multiplyCell(short[][] matrix1, short[][] matrix2, int row, int col){
-        short cell = 0, temp = 0, PX = 0x11B;
+        short cell = 0, temp, PX = 0x11B;
         for(int i = 0; i < matrix1.length; i++){
             if(matrix1[row][i] == 1) {
-                cell ^= matrix2[i][col];
+                temp = matrix2[i][col];
             } else if (matrix1[row][i] == 2){
                 temp = (short) (matrix2[i][col]<<1);
-                //check reduction
-                while (temp > 255){
-                    temp ^= PX;
-                }
-                cell ^= temp;
+
             } else {
                 temp = (short) (matrix2[i][col]<<1);
                 temp ^= matrix2[i][col];
-                // check reduction
-                while (temp > 255){
-                    temp ^= PX;
-                }
-                cell ^= temp;
+
             }
+            // Reduction according to GF(2^8)
+            while (temp > 255){
+                temp ^= PX;
+            }
+            cell ^= temp;
         }
         return cell;
     }
@@ -351,14 +315,14 @@ public class AES {
 
     public short[][] encryption_round(short[][] dataState, short[][] key){
         dataState = sBox_InvSbox(dataState, Sbox);                  // confusion Layer
-        dataState = shiftRowsLeft(dataState);                           // diffusion layer {shiftRows & mixColumns}
+        dataState = shiftRowsLeft(dataState);                       // diffusion layer {shiftRows & mixColumns}
         dataState = mixCol(dataState, mixColumn);
-        dataState = xor(dataState, key);                             // keyAddition Layer
+        dataState = xor(dataState, key);                            // keyAddition Layer
         return dataState;
     }
 
     public short[][] decryption_round(short[][] cipherState, short[][] key){
-        cipherState = xor(cipherState, key);                             // keyAddition Layer
+        cipherState = xor(cipherState, key);                        // keyAddition Layer
         cipherState = mixCol(cipherState, INV_mixColumns);
         cipherState = shiftRowsRight(cipherState);
         cipherState = sBox_InvSbox(cipherState, Inv_Sbox);
@@ -375,18 +339,15 @@ public class AES {
         }
         dataState = sBox_InvSbox(dataState, Sbox);                  // confusion Layer
         dataState = shiftRowsLeft(dataState);                       // diffusion layer shiftRows only for last round
-        dataState = xor(dataState, keys.get(10));                    // keyAddition Layer
+        dataState = xor(dataState, keys.get(10));                   // keyAddition Layer
 
-        String cipher = convertStateIntoHexString(dataState);
-        return cipher;
+        return convertStateIntoHexString(dataState);
     }
 
     public String decrypt(String encryptedText, String key){
         short[][] decryption = convertTextIntoState(encryptedText);
-        String decryptedText = "";
         ArrayList<short[][]> keys = keyGeneration(key);
         decryption = xor(decryption,keys.get(keys.size()-1));
-
         decryption = shiftRowsRight(decryption);
         decryption = sBox_InvSbox(decryption,Inv_Sbox);
         for (int i = keys.size()-2; i > 0; i--){
@@ -394,8 +355,7 @@ public class AES {
         }
         decryption = xor(decryption, keys.get(0));
 
-        decryptedText = convertStateIntoHexString(decryption);
-        return decryptedText;
+        return convertStateIntoHexString(decryption);
     }
 
     public ArrayList<String> splitText(String text, int size){
@@ -423,15 +383,15 @@ public class AES {
 
     public void printMatrix(short[][] state, String name){
         System.out.println("\n" + name + "=\n");
-        for (int i = 0; i < state.length; i++){
+        for (short[] shorts : state) {
             for (int j = 0; j < state[0].length; j++) {
-                System.out.print(" " + state[i][j]);
+                System.out.print(" " + shorts[j]);
             }
-            System.out.println("");
+            System.out.println();
         }
     }
     public static void main(String[] args) {
-        /***************************************************************Input_Handling*****************************************************************/
+        /* **************************************************************Input_Handling************************************************************** */
         System.out.println("Enter Plaintext to encrypt:");
         Scanner input = new Scanner(System.in);
         String plainText = input.nextLine();
@@ -457,29 +417,28 @@ public class AES {
             data = Aes.binToHex(data);
             text.set(i,data);                               // Replace String text with hex
         }
+
         key = Aes.convertStringToBinary(key);
         key = Aes.binToHex(key);                            // key in hex
-        short[][] keyState = Aes.convertTextIntoState(key);
-        Aes.printMatrix(keyState, "Key");
-        short[][] state = Aes.convertTextIntoState(text.get(0));
-        Aes.printMatrix(state, "Data");
-        /***************************************************************Key_Generation*****************************************************************/
+
+        /* **************************************************************Key_Generation************************************************************** */
         ArrayList<short[][]> keys = Aes.keyGeneration(key);
         for (int i = 0; i < keys.size(); i++){
-            Aes.printMatrix(keys.get(i), "Key" + i);
+            Aes.printMatrix(keys.get(i), "Key " + (i+1));
         }
-        /*****************************************************************Encryption*******************************************************************/
+        /* ****************************************************************Encryption**************************************************************** */
         String encryptedText = "";
         for (String block : text) {
             encryptedText = encryptedText.concat(Aes.encrypt(block, key));
         }
-        System.out.println("\nPlain Text\n" + plainText + "\n\nEncrypted Text\n" + encryptedText);
-        /*****************************************************************Decryption*******************************************************************/
+        System.out.println("\nPlain Text:\n" + plainText + "\n\nEncrypted Text:\n" + encryptedText);
+        /* ****************************************************************Decryption**************************************************************** */
         ArrayList<String> decryptedText = Aes.splitText(encryptedText,32);
         String decrypted = "";
         for (String block : decryptedText){
             decrypted = decrypted.concat(Aes.decrypt(block, key));
         }
-        System.out.println("\nDecrypted Text:\n" + Aes.hexToString(decrypted));
+        decrypted = Aes.hexToString(decrypted).replace("#","");
+        System.out.println("\nDecrypted Text:\n" + decrypted);
     }
 }
