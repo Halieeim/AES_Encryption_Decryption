@@ -70,8 +70,8 @@ public class AES {
 
     short[][] convertTextIntoState(String hexaText){
         short[][] matrix2D = new short[4][4];
-        for(int i = 0; i < (hexaText.length()) && (i/2 < 4); i+=2) {
-            for (int j = i; j < (hexaText.length()) && (j/9 < 4); j+=8) {
+        for(int i = 0; (i < hexaText.length()) && (i/2 < 4); i+=2) {
+            for (int j = i; (j < hexaText.length()) && (j/9 < 4); j+=8) {
                 matrix2D[i/2][j/8] = Short.parseShort(String.valueOf(hexaText.charAt(j)).concat(String.valueOf(hexaText.charAt(j+1))),16);
             }
         }
