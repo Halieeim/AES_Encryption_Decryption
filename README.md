@@ -59,3 +59,7 @@ Implementing Advanced Encryption Standard (AES) to Encrypt and Decrypt text.
 ## Decryption
 
 * To perform Decryption you only need to reverse the sequence of Encryption steps.
+
+![image](https://user-images.githubusercontent.com/68112462/204409543-fe95f61a-977c-49c6-9c19-71697b3c3c09.png)
+![image](https://user-images.githubusercontent.com/68112462/204409578-60e43ad1-8500-4702-a857-14a28df3d916.png)
+
