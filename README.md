@@ -51,7 +51,8 @@ Implementing Advanced Encryption Standard (AES) to Encrypt and Decrypt text.
 >
 
 ## Encryption
-![image](https://user-images.githubusercontent.com/68112462/204407927-91bd2c49-8bc0-4223-a065-517c72b81f98.png)
+![image](https://user-images.githubusercontent.com/68112462/204409251-d136ad16-eb0b-4f9a-b411-a45ad425fa8b.png)
+![image](https://user-images.githubusercontent.com/68112462/204409312-90a50b5e-55dc-4cbc-ba1e-1076a126291d.png)
 
 * Note that there are initial key addition layer before the first round and there is no MixColumn layer in the last round.
 
