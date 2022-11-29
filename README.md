@@ -6,6 +6,7 @@ Implementing Advanced Encryption Standard (AES) to Encrypt and Decrypt text.
 >> Data should be 128-bit long
 >>
 >> Keyspace can be one of the following lengths: {128-bit - 192-bit - 256-bit}. Note that the keyspace used in this implementaion is 128-bit.
+>
 
 * (No. Rounds) or (NO. of subkeys generated) depends on the keyspace. So if:
 
@@ -22,6 +23,7 @@ Implementing Advanced Encryption Standard (AES) to Encrypt and Decrypt text.
 >> Encryption
 >>
 >> Decrypton
+>
 
 ## Key Generation
 
@@ -46,6 +48,7 @@ Implementing Advanced Encryption Standard (AES) to Encrypt and Decrypt text.
 >> 8- Now you have the fourth column of the new subkey. Integerate these four columns to generate the full new subkey.
 >> 
 >> 9- Repeat starting from step 2 till you get total 11 subkeys.
+>
 
 ## Encryption
 ![image](https://user-images.githubusercontent.com/68112462/204407927-91bd2c49-8bc0-4223-a065-517c72b81f98.png)
