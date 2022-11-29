@@ -1,7 +1,7 @@
 # AES_Encryption_Decryption
 Implementing Advanced Encryption Standard (AES) to Encrypt and Decrypt text.
 
-> AES has a specifications:
+> AES has specifications:
 >
 >> Data should be 128-bit long
 >>
