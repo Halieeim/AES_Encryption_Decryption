@@ -68,7 +68,7 @@ public class AES {
     };
 
 
-    short[][] convertTextIntoState(String hexaText){
+    public short[][] convertTextIntoState(String hexaText){
         short[][] matrix2D = new short[4][4];
         for(int i = 0; (i < hexaText.length()) && (i/2 < 4); i+=2) {
             for (int j = i; (j < hexaText.length()) && (j/9 < 4); j+=8) {
@@ -93,7 +93,7 @@ public class AES {
     }
 
     // binary to hexadecimal conversion
-    String binToHex(String input) {
+    public String binToHex(String input) {
         String output = "";
         int n = input.length() / 4;
         ArrayList<String> blocks = splitText(input,4);
